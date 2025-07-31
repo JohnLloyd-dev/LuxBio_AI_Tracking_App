@@ -4,14 +4,14 @@ This directory contains comprehensive templates and examples for the LuxBio AI T
 
 ## 📁 File Overview
 
-| File                                 | Purpose                 | Format          | Use Case                 |
-| ------------------------------------ | ----------------------- | --------------- | ------------------------ |
-| `field_data_collection_template.csv` | **Primary field data**  | Simplified CSV  | **Field testing**        |
-| `FIELD_DATA_COLLECTION_GUIDE.md`     | **Measurement guide**   | Documentation   | **Field protocols**      |
-| `bulk_predictions_template.csv`      | Bulk predictions input  | Row-based       | Multiple scenarios       |
-| `weather_station_template.csv`       | Weather station data    | Time-series     | Environmental monitoring |
-| `calibration_data_template.csv`      | Model calibration       | Training data   | Model improvement        |
-| `validation_scenarios.csv`           | Test scenarios          | Validation      | System testing           |
+| File                                 | Purpose                | Format         | Use Case                 |
+| ------------------------------------ | ---------------------- | -------------- | ------------------------ |
+| `field_data_collection_template.csv` | **Primary field data** | Simplified CSV | **Field testing**        |
+| `FIELD_DATA_COLLECTION_GUIDE.md`     | **Measurement guide**  | Documentation  | **Field protocols**      |
+| `bulk_predictions_template.csv`      | Bulk predictions input | Row-based      | Multiple scenarios       |
+| `weather_station_template.csv`       | Weather station data   | Time-series    | Environmental monitoring |
+| `calibration_data_template.csv`      | Model calibration      | Training data  | Model improvement        |
+| `validation_scenarios.csv`           | Test scenarios         | Validation     | System testing           |
 
 ---
 
