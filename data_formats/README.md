@@ -1,15 +1,15 @@
-# CSV Data Format Files for Bioluminescent Detection AI Model
+# Data Format Files for LuxBio AI Tracking App
 
-This directory contains comprehensive CSV templates and examples for the bioluminescent detection AI model system.
+This directory contains comprehensive templates and examples for the LuxBio AI Tracking App, optimized for field data collection and model training.
 
 ## 📁 File Overview
 
 | File                                 | Purpose                 | Format          | Use Case                 |
 | ------------------------------------ | ----------------------- | --------------- | ------------------------ |
-| `single_prediction_template.csv`     | Single prediction input | Parameter-based | Individual predictions   |
+| `field_data_collection_template.csv` | **Primary field data**  | Simplified CSV  | **Field testing**        |
+| `FIELD_DATA_COLLECTION_GUIDE.md`     | **Measurement guide**   | Documentation   | **Field protocols**      |
 | `bulk_predictions_template.csv`      | Bulk predictions input  | Row-based       | Multiple scenarios       |
 | `weather_station_template.csv`       | Weather station data    | Time-series     | Environmental monitoring |
-| `field_data_collection_template.csv` | Complete field data     | Comprehensive   | Field testing            |
 | `calibration_data_template.csv`      | Model calibration       | Training data   | Model improvement        |
 | `validation_scenarios.csv`           | Test scenarios          | Validation      | System testing           |
 
@@ -96,29 +96,61 @@ timestamp,lat,lon,wind_speed(m/s),precip(mm/hr),wave_height(m),ambient_light(lux
 - Timestamped data
 - Complete environmental parameters
 
-### 4. `field_data_collection_template.csv`
+### 1. `field_data_collection_template.csv` ⭐ **PRIMARY FORMAT**
 
-**Format:** Comprehensive field testing data
+**Format:** Simplified field data collection (8 key parameters)
 
 ```csv
-test_id,timestamp,location_lat,location_lon,activation_time,water_temperature,...,actual_distance,detection_confidence,...
-TEST-001,2024-01-15T22:30:00Z,48.423,-123.367,45.0,8.5,...,427,0.85,...
+test_id,date,lat,lon,actual_distance,activation_time,water_temp,wind_speed,precipitation,wave_height,ambient_light,sensor_type,notes
+VH-001,2024-01-15,48.423,-123.367,320,45,8.5,5.2,2.4,1.2,0.002,drone,Moderate conditions - successful detection
 ```
 
 **Usage:**
 
-- Complete field test documentation
-- Validation data collection
-- Performance analysis
+- **Primary field data collection**
+- **Model training and validation**
+- **Performance analysis**
+
+**Key Features:**
+
+- **8 essential parameters** optimized for field measurement
+- **GPS coordinates** for location tracking
+- **Actual detection distances** for validation
+- **Sensor type specification** (human/drone/nvg)
+- **Notes field** for observations
+
+**Required Fields:**
+
+- `test_id` - Unique test identifier
+- `date` - Test date (YYYY-MM-DD)
+- `lat`, `lon` - GPS coordinates
+- `actual_distance` - Detection range in meters (0-1000)
+- `activation_time` - Minutes since activation (0-360)
+- `water_temp` - Water temperature in °C (-2 to 30)
+- `wind_speed` - Wind speed in m/s (0-25)
+- `precipitation` - Rain intensity in mm/hr (0-50)
+- `wave_height` - Wave height in meters (0-10)
+- `ambient_light` - Background light in lux (0.0001-0.1)
+- `sensor_type` - Detection system (human/drone/nvg)
+
+### 2. `FIELD_DATA_COLLECTION_GUIDE.md` 📋 **MEASUREMENT PROTOCOLS**
+
+**Purpose:** Comprehensive field measurement guide
 
 **Includes:**
 
-- Test identification
-- Location data
-- Input parameters
-- Detection results
-- Confidence scores
-- Notes and observations
+- **Detailed measurement protocols** for each parameter
+- **Equipment recommendations** ($150 total kit)
+- **Troubleshooting guides** for common issues
+- **Data validation checklist**
+- **Example datasets** and field procedures
+- **Quality standards** and acceptable ranges
+
+**Usage:**
+
+- **Field training** for data collectors
+- **Protocol reference** during testing
+- **Quality assurance** guidelines
 
 ### 5. `calibration_data_template.csv`
 
@@ -229,12 +261,21 @@ for _, row in df.iterrows():
         pass
 ```
 
-### For Field Data Collection
+### For Field Data Collection ⭐ **PRIMARY WORKFLOW**
 
-1. **Use `field_data_collection_template.csv`** as your base template
-2. **Fill in environmental data** from your sensors
-3. **Record actual detection distances** and confidence scores
-4. **Upload to API** for model calibration
+1. **Read `FIELD_DATA_COLLECTION_GUIDE.md`** for measurement protocols
+2. **Use `field_data_collection_template.csv`** as your base template
+3. **Follow the 8-parameter measurement protocol**:
+   - Actual distance (GPS measurement)
+   - Activation time (stopwatch)
+   - Water temperature (thermometer)
+   - Wind speed (anemometer)
+   - Precipitation (rain gauge)
+   - Wave height (visual estimate)
+   - Ambient light (lux meter)
+   - Sensor type (human/drone/nvg)
+4. **Validate data** using the checklist in the guide
+5. **Upload to API** for model training and validation
 
 ### For Model Calibration
 
@@ -249,19 +290,28 @@ for _, row in df.iterrows():
 
 ### Required Field Validation
 
-- All required fields must be present
+- All 12 required fields must be present
 - Values must be within specified ranges
 - Units must be correct (m/s, mm/hr, etc.)
 
-### Range Validation
+### Range Validation (8 Key Parameters)
 
 ```python
+# Actual distance: 0-1000 meters
 # Activation time: 0-360 minutes
 # Water temperature: -2 to 30°C
-# Wind speed: 0-25 m/s (capped at 25)
+# Wind speed: 0-25 m/s
 # Precipitation: 0-50 mm/hr
-# Wave height: 0-10 m (capped at 10)
+# Wave height: 0-10 meters
 # Ambient light: 0.0001-0.1 lux
+# Sensor type: human/drone/nvg
+```
+
+### GPS Coordinate Validation
+
+```python
+# Latitude: -90 to 90 degrees
+# Longitude: -180 to 180 degrees
 ```
 
 ### Sensor Type Validation
@@ -270,11 +320,15 @@ for _, row in df.iterrows():
 VALID_SENSOR_TYPES = ["human", "drone", "nvg"]
 ```
 
-### Unit Conversion
+### Data Quality Standards
 
-- Current speed: knots → m/s (× 0.514)
-- Temperature: °F → °C if needed
-- Spectral range: nm (350-900)
+- **Distance**: ±10m accuracy for GPS measurements
+- **Time**: ±1 minute for activation timing
+- **Temperature**: ±0.5°C for water temperature
+- **Wind**: ±1 m/s for wind speed
+- **Precipitation**: ±1 mm/hr for rain gauge
+- **Waves**: ±0.2m for visual estimates
+- **Light**: ±20% for lux meter readings
 
 ---
 

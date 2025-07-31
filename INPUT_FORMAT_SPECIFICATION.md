@@ -20,31 +20,34 @@ This document provides the complete specification for input data formats accepte
 
 ## 1. Core Data Structure
 
-### JSON Format (Recommended)
+### CSV Format (Recommended for Field Data)
+
+The system accepts a simplified CSV format optimized for field data collection with 8 key parameters:
+
+```csv
+test_id,date,lat,lon,actual_distance,activation_time,water_temp,wind_speed,precipitation,wave_height,ambient_light,sensor_type,notes
+VH-001,2024-01-15,48.423,-123.367,320,45,8.5,5.2,2.4,1.2,0.002,drone,Moderate conditions - successful detection
+```
+
+### JSON Format (For API Integration)
 
 ```json
 {
-  "temporal_parameters": {
-    "activation_time": 45.0, // Minutes since activation
-    "water_temperature": 8.5 // °C
+  "test_id": "VH-001",
+  "date": "2024-01-15",
+  "location": {
+    "lat": 48.423,
+    "lon": -123.367
   },
-  "environmental_conditions": {
-    "wind_speed": 5.2, // m/s (at 10m height)
-    "precipitation": 2.4, // mm/hr
-    "wave_height": 1.2, // m (significant wave height)
-    "ambient_light": 0.002, // lux
-    "water_turbidity": 1.8, // NTU (optional)
-    "current_speed": 0.4 // knots (optional)
-  },
-  "sensor_parameters": {
-    "type": "drone", // "human", "drone", or "nvg"
-    "model": "DJI_M30T", // Sensor-specific ID (optional)
-    "spectral_range": [450, 550] // nm (optional)
-  },
-  "product_parameters": {
-    "bead_density": 350, // Beads per unit (optional)
-    "batch_id": "LXB-2025-08" // Optional
-  }
+  "actual_distance": 320,
+  "activation_time": 45,
+  "water_temp": 8.5,
+  "wind_speed": 5.2,
+  "precipitation": 2.4,
+  "wave_height": 1.2,
+  "ambient_light": 0.002,
+  "sensor_type": "drone",
+  "notes": "Moderate conditions - successful detection"
 }
 ```
 
@@ -52,25 +55,28 @@ This document provides the complete specification for input data formats accepte
 
 ## 2. Detailed Field Specifications
 
-| **Category**      | **Parameter**     | **Type**       | **Units** | **Range**  | **Required** | **Description**                       |
-| ----------------- | ----------------- | -------------- | --------- | ---------- | ------------ | ------------------------------------- |
-| **Temporal**      | activation_time   | float          | minutes   | 0-360      | Yes          | Time since bead activation            |
-|                   | water_temperature | float          | °C        | -2 to 30   | Yes          | Water temperature at deployment depth |
-| **Environmental** | wind_speed        | float          | m/s       | 0-25       | Yes          | 10-minute average at 10m height       |
-|                   | precipitation     | float          | mm/hr     | 0-50       | Yes          | Rain/fog precipitation rate           |
-|                   | wave_height       | float          | m         | 0-10       | Yes          | Significant wave height               |
-|                   | ambient_light     | float          | lux       | 0.0001-0.1 | Yes          | Background illuminance                |
-|                   | water_turbidity   | float          | NTU       | 0-10       | No           | Water clarity (default: 1.5)          |
-|                   | current_speed     | float          | knots     | 0-5        | No           | Surface current speed                 |
-| **Sensor**        | type              | string         | -         | enum       | Yes          | Detection system type                 |
-|                   | model             | string         | -         | -          | No           | Specific sensor model                 |
-|                   | spectral_range    | [float, float] | nm        | 350-900    | No           | Detection wavelength range            |
-| **Product**       | bead_density      | int            | count     | 100-1000   | No           | Beads per deployment unit             |
-|                   | batch_id          | string         | -         | -          | No           | Manufacturing batch                   |
+Based on the Comprehensive Field Data Collection Guide, the system uses 8 key parameters optimized for field measurement:
 
-### Sensor Type Mapping
+| **Parameter**     | **Type**       | **Units** | **Range**  | **Required** | **Description**                       | **Measurement Method**                |
+| ----------------- | -------------- | --------- | ---------- | ------------ | ------------------------------------- | ------------------------------------- |
+| **actual_distance** | float          | meters    | 0-1000     | Yes          | Maximum visibility range where markers detectable | GPS distance from activation point to detection boundary |
+| **activation_time** | float          | minutes   | 0-360      | Yes          | Time elapsed since bead activation    | Stopwatch from activation moment      |
+| **water_temp**    | float          | °C        | -2 to 30   | Yes          | Water temperature at deployment depth | Digital thermometer 0.5m below surface |
+| **wind_speed**    | float          | m/s       | 0-25       | Yes          | Sustained wind speed at 10m height    | Anemometer app or handheld device     |
+| **precipitation** | float          | mm/hr     | 0-50       | Yes          | Liquid precipitation intensity        | Rain gauge or visual estimation       |
+| **wave_height**   | float          | m         | 0-10       | Yes          | Significant wave height (trough to crest) | Visual reference or wave timing method |
+| **ambient_light** | float          | lux       | 0.0001-0.1 | Yes          | Background illumination level        | Lux meter app pointing straight up    |
+| **sensor_type**   | string         | -         | enum       | Yes          | Detection technology used             | Record as "human", "drone", or "nvg"  |
+
+### Sensor Type Definitions
 
 ```python
+SENSOR_TYPES = {
+    "human": "Unaided vision (even with binoculars)",
+    "drone": "Any UAV camera system", 
+    "nvg": "Any night vision device"
+}
+
 SENSOR_THRESHOLDS = {
     "human": 0.001,    # Human eye detection threshold (lux)
     "drone": 0.005,    # Drone camera detection threshold (lux)
@@ -82,64 +88,93 @@ SENSOR_THRESHOLDS = {
 
 ## 3. Accepted Input Formats
 
-### Option 1: JSON (Recommended)
+### Option 1: CSV (Recommended for Field Data)
+
+**Single Test Record:**
+
+```csv
+test_id,date,lat,lon,actual_distance,activation_time,water_temp,wind_speed,precipitation,wave_height,ambient_light,sensor_type,notes
+VH-001,2024-01-15,48.423,-123.367,320,45,8.5,5.2,2.4,1.2,0.002,drone,Moderate conditions - successful detection
+```
+
+**Bulk Test Records:**
+
+```csv
+test_id,date,lat,lon,actual_distance,activation_time,water_temp,wind_speed,precipitation,wave_height,ambient_light,sensor_type,notes
+VH-001,2024-01-15,48.423,-123.367,320,45,8.5,5.2,2.4,1.2,0.002,drone,Moderate conditions
+VH-001,2024-01-15,48.423,-123.367,520,45,8.5,5.2,2.4,1.2,0.002,nvg,Same conditions with NVG
+VH-002,2024-01-15,48.425,-123.365,280,60,8.4,5.5,2.1,1.3,0.002,human,Clear conditions
+```
+
+### Option 2: JSON (For API Integration)
 
 **Single Prediction:**
 
 ```json
 {
-  "temporal_parameters": {
-    "activation_time": 45.0,
-    "water_temperature": 8.5
+  "test_id": "VH-001",
+  "date": "2024-01-15",
+  "location": {
+    "lat": 48.423,
+    "lon": -123.367
   },
-  "environmental_conditions": {
-    "wind_speed": 5.2,
-    "precipitation": 2.4,
-    "wave_height": 1.2,
-    "ambient_light": 0.002
-  },
-  "sensor_parameters": {
-    "type": "drone"
-  }
+  "actual_distance": 320,
+  "activation_time": 45,
+  "water_temp": 8.5,
+  "wind_speed": 5.2,
+  "precipitation": 2.4,
+  "wave_height": 1.2,
+  "ambient_light": 0.002,
+  "sensor_type": "drone",
+  "notes": "Moderate conditions - successful detection"
 }
+```
 ```
 
 **Bulk Predictions:**
 
 ```json
-{
-  "predictions": [
-    {
-      "temporal_parameters": {
-        "activation_time": 45.0,
-        "water_temperature": 8.5
-      },
-      "environmental_conditions": {
-        "wind_speed": 5.2,
-        "precipitation": 2.4,
-        "wave_height": 1.2,
-        "ambient_light": 0.002
-      },
-      "sensor_parameters": { "type": "drone" }
+[
+  {
+    "test_id": "VH-001",
+    "date": "2024-01-15",
+    "location": {
+      "lat": 48.423,
+      "lon": -123.367
     },
-    {
-      "temporal_parameters": {
-        "activation_time": 60.0,
-        "water_temperature": 10.2
-      },
-      "environmental_conditions": {
-        "wind_speed": 3.1,
-        "precipitation": 0.0,
-        "wave_height": 0.5,
-        "ambient_light": 0.0005
-      },
-      "sensor_parameters": { "type": "nvg" }
-    }
-  ]
-}
+    "actual_distance": 320,
+    "activation_time": 45,
+    "water_temp": 8.5,
+    "wind_speed": 5.2,
+    "precipitation": 2.4,
+    "wave_height": 1.2,
+    "ambient_light": 0.002,
+    "sensor_type": "drone",
+    "notes": "Moderate conditions"
+  },
+  {
+    "test_id": "VH-001",
+    "date": "2024-01-15",
+    "location": {
+      "lat": 48.423,
+      "lon": -123.367
+    },
+    "actual_distance": 520,
+    "activation_time": 45,
+    "water_temp": 8.5,
+    "wind_speed": 5.2,
+    "precipitation": 2.4,
+    "wave_height": 1.2,
+    "ambient_light": 0.002,
+    "sensor_type": "nvg",
+    "notes": "Same conditions with NVG"
+  }
+]
 ```
 
-### Option 2: CSV (Single Prediction)
+### Option 3: Legacy CSV Format (Deprecated)
+
+For backward compatibility, the system still accepts the legacy format:
 
 ```csv
 parameter_category,parameter,value,units
@@ -152,7 +187,7 @@ environmental,ambient_light,0.002,lux
 sensor,type,drone,na
 ```
 
-### Option 3: CSV (Bulk Predictions)
+### Option 4: Legacy Bulk CSV Format (Deprecated)
 
 ```csv
 activation_time,water_temp,wind_speed,precip,wave_ht,ambient_light,sensor_type
@@ -161,6 +196,8 @@ activation_time,water_temp,wind_speed,precip,wave_ht,ambient_light,sensor_type
 30.0,5.8,12.4,8.7,2.3,0.01,human
 ```
 
+> **Note**: The new simplified CSV format (Option 1) is recommended for all new field data collection.
+
 ---
 
 ## 4. Data Validation Rules
@@ -168,21 +205,33 @@ activation_time,water_temp,wind_speed,precip,wave_ht,ambient_light,sensor_type
 ### Range Validation
 
 ```python
-# Activation time validation
+# Actual distance validation (0-1000m)
+if not (0 <= actual_distance <= 1000):
+    raise ValueError("Actual distance must be 0-1000 meters")
+
+# Activation time validation (0-360 minutes)
 if not (0 <= activation_time <= 360):
     raise ValueError("Activation time must be 0-360 minutes")
 
-# Water temperature validation
-if not (-2 <= water_temperature <= 30):
+# Water temperature validation (-2 to 30°C)
+if not (-2 <= water_temp <= 30):
     raise ValueError("Water temperature must be -2 to 30°C")
 
-# Wind speed validation (with capping)
-if wind_speed > 25:
-    wind_speed = 25.0  # Cap at 25 m/s with warning
+# Wind speed validation (0-25 m/s)
+if not (0 <= wind_speed <= 25):
+    raise ValueError("Wind speed must be 0-25 m/s")
 
-# Ambient light validation
-if ambient_light < 0.0001:
-    ambient_light = 0.0001  # Set to minimum detectable
+# Precipitation validation (0-50 mm/hr)
+if not (0 <= precipitation <= 50):
+    raise ValueError("Precipitation must be 0-50 mm/hr")
+
+# Wave height validation (0-10 m)
+if not (0 <= wave_height <= 10):
+    raise ValueError("Wave height must be 0-10 meters")
+
+# Ambient light validation (0.0001-0.1 lux)
+if not (0.0001 <= ambient_light <= 0.1):
+    raise ValueError("Ambient light must be 0.0001-0.1 lux")
 ```
 
 ### Sensor Type Validation
@@ -194,89 +243,147 @@ if sensor_type not in VALID_SENSOR_TYPES:
     raise ValueError(f"Sensor type must be one of: {VALID_SENSOR_TYPES}")
 ```
 
-### Unit Conversions
+### GPS Coordinate Validation
 
 ```python
-# Convert knots to m/s if needed
-if 'current_speed' in data and data['current_unit'] == 'knots':
-    data['current_speed'] *= 0.514  # knots → m/s
+# Latitude validation (-90 to 90)
+if not (-90 <= lat <= 90):
+    raise ValueError("Latitude must be -90 to 90 degrees")
 
-# Convert temperature if needed
-if 'water_temperature_unit' in data and data['water_temperature_unit'] == 'F':
-    data['water_temperature'] = (data['water_temperature'] - 32) * 5/9  # F → C
+# Longitude validation (-180 to 180)
+if not (-180 <= lon <= 180):
+    raise ValueError("Longitude must be -180 to 180 degrees")
+```
+
+### Data Quality Checks
+
+```python
+# Check for missing required fields
+REQUIRED_FIELDS = [
+    'test_id', 'date', 'lat', 'lon', 'actual_distance',
+    'activation_time', 'water_temp', 'wind_speed', 
+    'precipitation', 'wave_height', 'ambient_light', 'sensor_type'
+]
+
+for field in REQUIRED_FIELDS:
+    if field not in data or data[field] is None:
+        raise ValueError(f"Missing required field: {field}")
 ```
 
 ---
 
 ## 5. Data Collection Protocol
 
-### Environmental Sensors Setup
+### Field Data Collection Kit ($150 Total)
 
-```mermaid
-graph LR
-    A[Weather Station] -->|Wind/Rain| B[Data Logger]
-    C[Wave Buoy] -->|Wave Height| B
-    D[Spectrometer] -->|Ambient Light| B
-    E[Thermistor] -->|Water Temp| B
-    B --> F[Timestamped CSV]
-```
+Based on the Comprehensive Field Data Collection Guide, the following equipment is recommended:
 
-### Minimum Required Data
+| **Item** | **Purpose** | **Cost** | **Measurement Method** |
+|----------|-------------|----------|------------------------|
+| Waterproof phone case | All measurements | $15 | Protection for all devices |
+| Digital thermometer | Water temperature | $8 | Submerge 0.5m below surface |
+| Rain gauge | Precipitation | $5 | Measure mm collected in 10 minutes |
+| Stopwatch | Activation timing | $10 | Start at bead activation |
+| Anemometer | Wind speed | $25 | 1-minute average at 10m height |
+| GPS app | Distance/location | Free | Calculate GPS distance |
+| Lux Light Meter app | Ambient light | Free | Point phone straight up |
+| Field notebook | Manual recording | $5 | Backup data recording |
 
-```python
-REQUIRED_FIELDS = [
-    'activation_time',
-    'water_temperature',
-    'wind_speed',
-    'precipitation',
-    'wave_height',
-    'ambient_light',
-    'sensor_type'
-]
-```
+### Measurement Protocols
 
-### Data Collection Frequency
+#### 1. Actual Distance (0-1000 m)
+- Activate beads at Point A (record GPS)
+- Move observer/drone to increasing distances
+- Record GPS at detection boundary (Point B)
+- Calculate: `distance = GPS_distance(A,B)`
 
-- **Environmental Data**: Every 5 minutes during tests
-- **Temporal Data**: Synchronized with GPS clock (UTC)
-- **Detection Results**: Immediately after each test
+#### 2. Activation Time (0-360 min)
+- Start stopwatch at activation ("t=0")
+- Record test time relative to activation
+- Round to nearest minute
+
+#### 3. Water Temperature (-2 to 30°C)
+- Submerge thermometer 0.5m below surface
+- Wait 1 minute for stabilization
+- Measure within 5m of marker deployment
+
+#### 4. Wind Speed (0-25 m/s)
+- Use anemometer app or handheld device
+- Record 1-minute average at 10m height
+- Cross-check with Beaufort scale
+
+#### 5. Precipitation (0-50 mm/hr)
+- Place rain gauge in open area
+- Measure mm collected in 10 minutes
+- Multiply by 6 for mm/hr
+
+#### 6. Wave Height (0-10 m)
+- Use visual reference or wave timing method
+- Estimate average of highest 1/3 waves
+- Boat reference: waist-height = ~1.2m
+
+#### 7. Ambient Light (0.0001-0.1 lux)
+- Open light meter app
+- Point phone straight up
+- Record stable reading
+
+#### 8. Sensor Type (human/drone/nvg)
+- Record detection technology used
+- Test all available sensors separately
+- Note model if known
+
+### Data Validation Checklist
+
+Before submitting data:
+1. GPS coordinates within 10m accuracy ✅
+2. All values within physical ranges ✅
+3. Timestamps consistent across measurements ✅
+4. Sensor type clearly specified ✅
+5. Wave height matches precipitation/wind ✅
 
 ---
 
 ## 6. Example Field Data Collection
 
-### Marine Weather Station Output
+### Complete Field Dataset Example
+
+Based on the Comprehensive Field Data Collection Guide, here's a complete example:
 
 ```csv
-timestamp,lat,lon,wind_speed(m/s),precip(mm/hr),wave_height(m),ambient_light(lux),water_temp(C)
+test_id,date,lat,lon,actual_distance,activation_time,water_temp,wind_speed,precipitation,wave_height,ambient_light,sensor_type,notes
+VH-23,2023-08-15,48.423,-123.367,320,45,8.5,5.2,2.4,1.2,0.002,drone,Moderate conditions - successful detection
+VH-23,2023-08-15,48.423,-123.367,520,45,8.5,5.2,2.4,1.2,0.002,nvg,Same conditions with NVG - better range
+VH-24,2023-08-15,48.425,-123.365,180,60,8.4,5.5,2.1,1.3,0.002,human,Clear conditions - human observer
+VH-25,2023-08-15,48.427,-123.363,450,75,8.6,5.8,1.8,1.1,0.002,drone,Calming conditions - optimal detection
+```
+
+### Field Measurement Process
+
+1. **Setup (22:00)**: Deploy weather station, calibrate instruments
+2. **Activation (22:15)**: Activate bioluminescent beads, start stopwatch
+3. **Test Series (22:30-23:30)**: 
+   - Measure environmental conditions every 5 minutes
+   - Test detection range with different sensors
+   - Record GPS coordinates at detection boundaries
+4. **Data Compilation**: Combine all measurements into CSV format
+
+### Environmental Conditions Log
+
+```csv
+timestamp,lat,lon,wind_speed,precipitation,wave_height,ambient_light,water_temp
 2023-08-15T22:30:00Z,48.423,-123.367,5.2,2.4,1.2,0.002,8.5
 2023-08-15T22:35:00Z,48.423,-123.367,5.5,2.1,1.3,0.002,8.4
 2023-08-15T22:40:00Z,48.423,-123.367,5.8,1.8,1.1,0.002,8.6
 ```
 
-### Deployment Log Entry
+### Detection Results Summary
 
-```json
-{
-  "activation_time": "2023-08-15T22:15:00Z",
-  "sensor_type": "drone",
-  "bead_density": 350,
-  "notes": "Test series #5 - moderate conditions"
-}
-```
-
-### Combined Input for Model
-
-```json
-{
-  "temporal_parameters": {
-    "activation_time": 45.0, // 22:30 - 22:15 = 45 mins
-    "water_temperature": 8.5
-  },
-  "environmental_conditions": {
-    "wind_speed": 5.2,
-    "precipitation": 2.4,
-    "wave_height": 1.2,
+| Test ID | Sensor | Distance (m) | Conditions | Notes |
+|---------|--------|--------------|------------|-------|
+| VH-23 | Drone | 320 | Moderate | Successful detection |
+| VH-23 | NVG | 520 | Moderate | 62% range improvement |
+| VH-24 | Human | 180 | Clear | Limited by human vision |
+| VH-25 | Drone | 450 | Calm | Optimal conditions |
     "ambient_light": 0.002
   },
   "sensor_parameters": {
