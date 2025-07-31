@@ -1,0 +1,6 @@
+test_id,timestamp,location_lat,location_lon,activation_time,water_temperature,wind_speed,precipitation,wave_height,ambient_light,water_turbidity,current_speed,sensor_type,sensor_model,bead_density,batch_id,actual_distance,detection_confidence,detection_method,notes
+TEST-001,2024-01-15T22:30:00Z,48.423,-123.367,45.0,8.5,5.2,2.4,1.2,0.002,1.8,0.4,drone,DJI_M30T,350,LXB-2025-08,427,0.85,visual_confirmation,Moderate conditions - successful detection
+TEST-002,2024-01-15T22:45:00Z,48.423,-123.367,60.0,8.4,5.5,2.1,1.3,0.002,1.7,0.3,drone,DJI_M30T,350,LXB-2025-08,398,0.78,visual_confirmation,Light rain - reduced visibility
+TEST-003,2024-01-15T23:00:00Z,48.423,-123.367,75.0,8.6,5.8,1.8,1.1,0.002,1.6,0.2,drone,DJI_M30T,350,LXB-2025-08,365,0.72,visual_confirmation,Calming conditions - good detection
+TEST-004,2024-01-15T23:15:00Z,48.423,-123.367,90.0,8.3,6.1,1.5,1.0,0.002,1.5,0.1,drone,DJI_M30T,350,LXB-2025-08,342,0.68,visual_confirmation,Clear conditions - optimal detection
+TEST-005,2024-01-15T23:30:00Z,48.423,-123.367,105.0,8.7,5.9,1.9,1.2,0.002,1.4,0.3,drone,DJI_M30T,350,LXB-2025-08,318,0.65,visual_confirmation,Stable conditions - consistent results 

@@ -1,0 +1,15 @@
+scenario_name,activation_time,water_temperature,wind_speed,precipitation,wave_height,ambient_light,sensor_type,water_turbidity,current_speed,expected_range_min,expected_range_max,notes
+Calm_Night_Drone,45.0,8.5,1.0,0.0,0.1,0.002,drone,1.5,0.0,500,600,Optimal conditions for drone detection
+Windy_Night_Drone,45.0,8.5,12.0,0.0,1.5,0.002,drone,1.5,0.0,300,400,Moderate wind reduces detection range
+Rainy_Night_Drone,45.0,8.5,3.0,8.0,0.8,0.002,drone,2.0,0.0,250,350,Precipitation significantly reduces visibility
+Storm_Night_Drone,45.0,8.5,18.0,20.0,3.0,0.002,drone,3.0,0.0,100,200,Extreme conditions - limited detection
+Cold_Water_Drone,45.0,-1.0,2.0,0.0,0.2,0.002,drone,1.5,0.0,400,500,Cold water affects bioluminescence
+Calm_Night_NVG,45.0,8.5,1.0,0.0,0.1,0.0005,nvg,1.5,0.0,800,1000,NVG provides enhanced detection
+Windy_Night_NVG,45.0,8.5,12.0,0.0,1.5,0.0005,nvg,1.5,0.0,500,650,NVG still effective in wind
+Rainy_Night_NVG,45.0,8.5,3.0,8.0,0.8,0.0005,nvg,2.0,0.0,400,500,NVG helps in rainy conditions
+Calm_Night_Human,45.0,8.5,1.0,0.0,0.1,0.002,human,1.5,0.0,200,300,Human eye detection limits
+Windy_Night_Human,45.0,8.5,12.0,0.0,1.5,0.002,human,1.5,0.0,100,150,Wind significantly affects human detection
+Early_Activation_Drone,15.0,8.5,5.0,0.0,0.5,0.002,drone,1.5,0.0,600,700,Early activation - maximum brightness
+Late_Activation_Drone,180.0,8.5,5.0,0.0,0.5,0.002,drone,1.5,0.0,150,250,Late activation - reduced brightness
+High_Ambient_Light,45.0,8.5,5.0,0.0,0.5,0.01,drone,1.5,0.0,100,200,High ambient light reduces contrast
+Low_Ambient_Light,45.0,8.5,5.0,0.0,0.5,0.0001,drone,1.5,0.0,400,500,Very low light - optimal for detection 

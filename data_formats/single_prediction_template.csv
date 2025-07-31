@@ -1,0 +1,14 @@
+parameter_category,parameter,value,units
+temporal,activation_time,45.0,minutes
+temporal,water_temperature,8.5,C
+environmental,wind_speed,5.2,m/s
+environmental,precipitation,2.4,mm/hr
+environmental,wave_height,1.2,m
+environmental,ambient_light,0.002,lux
+environmental,water_turbidity,1.8,NTU
+environmental,current_speed,0.4,knots
+sensor,type,drone,na
+sensor,model,DJI_M30T,na
+sensor,spectral_range,"[450, 550]",nm
+product,bead_density,350,count
+product,batch_id,LXB-2025-08,na 
