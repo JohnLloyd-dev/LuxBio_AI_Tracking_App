@@ -22,11 +22,8 @@ import threading
 import time
 
 # Import the bioluminescence model and data processors
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from bioluminescence_model import BioluminescenceModel, ModelParameters
-from data_models import DetectionInput, DataProcessor, ValidationResult, SensorType, WindSpeedConverter, WindSpeedUnit
+from .bioluminescence_model import BioluminescenceModel, ModelParameters
+from .data_models import DetectionInput, DataProcessor, ValidationResult, SensorType, WindSpeedConverter, WindSpeedUnit
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -251,11 +248,16 @@ async def predict_distance(request: PredictionRequest):
                 detail=f"Input validation failed: {validation_result.errors}"
             )
         
-        # Convert to model input format
-        model_input = data_processor.convert_to_model_input(validation_result.processed_data)
+        # Create DetectionInput object for the model
+        detection_input = DetectionInput(
+            temporal_parameters=request.temporal_parameters,
+            environmental_conditions=request.environmental_conditions,
+            sensor_parameters=request.sensor_parameters,
+            product_parameters=request.product_parameters
+        )
         
         # Make prediction
-        result = model.predict(**model_input)
+        result = model.predict(detection_input)
         
         # Add enhanced response data
         result['timestamp'] = datetime.now().isoformat()
@@ -299,11 +301,16 @@ async def predict_distance_bulk(request: BulkPredictionRequest):
                     errors.append(f"Request {i+1}: {validation_result.errors}")
                     continue
                 
-                # Convert to model input format
-                model_input = data_processor.convert_to_model_input(validation_result.processed_data)
+                # Create DetectionInput object for the model
+                detection_input = DetectionInput(
+                    temporal_parameters=pred_request.temporal_parameters,
+                    environmental_conditions=pred_request.environmental_conditions,
+                    sensor_parameters=pred_request.sensor_parameters,
+                    product_parameters=pred_request.product_parameters
+                )
                 
                 # Make prediction
-                result = model.predict(**model_input)
+                result = model.predict(detection_input)
                 result['timestamp'] = datetime.now().isoformat()
                 result['input_validation'] = {
                     'is_valid': validation_result.is_valid,
@@ -467,6 +474,11 @@ async def get_model_info():
     """
     try:
         model_info = model.get_model_info()
+        
+        # Add missing fields required by ModelInfoResponse
+        model_info['calibration_history'] = []
+        model_info['validation_data_count'] = 0
+        model_info['model_version'] = model_info.get('version', '2.0.0')
         
         # Add enhanced information
         model_info['supported_sensors'] = ['human', 'drone', 'nvg']

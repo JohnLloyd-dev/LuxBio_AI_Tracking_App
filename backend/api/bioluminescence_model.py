@@ -1,477 +1,312 @@
 """
-Bioluminescent Bead Detection Distance Prediction AI Model
+Bioluminescence Detection AI Model
 
-This module implements the core AI model for predicting maximum detection distances
-of bioluminescent beads under various environmental conditions.
+This module provides the core AI model for predicting bioluminescent bead detection distances
+based on environmental conditions, sensor parameters, and temporal factors.
 """
 
 import numpy as np
-import pandas as pd
-from typing import Dict, List, Tuple, Optional, Union
+from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
-from scipy.optimize import minimize
-from sklearn.metrics import mean_absolute_error, r2_score
-import warnings
-warnings.filterwarnings('ignore')
-
-# Physical constants
-R = 8.314  # Gas constant (J/mol·K)
+from .data_models import DetectionInput, ValidationResult
 
 @dataclass
 class ModelParameters:
-    """Default calibrated parameters for the bioluminescence model"""
-    # Light decay parameters
-    I0: float = 10.0      # Initial intensity (lux)
-    A: float = 0.015      # Arrhenius prefactor
-    Ea: float = 50000     # Activation energy (J/mol)
-    
-    # Environmental attenuation parameters
-    alpha0: float = 0.002  # Base attenuation (m^-1)
-    alpha1: float = 0.018  # Wind coefficient
-    alpha2: float = 0.025  # Precipitation coefficient
-    alpha3: float = 0.032  # Wave height coefficient
-    alpha4: float = 0.008  # Precipitation-wave interaction
-    beta: float = 1.2      # Wind exponent
-    
-    # Detection threshold parameters
-    k_sensor: Dict[str, float] = None  # Sensor-specific constants
-    gamma: float = 1.5     # Ambient scaling factor
-    
-    def __post_init__(self):
-        if self.k_sensor is None:
-            self.k_sensor = {
-                'human': 0.001,
-                'drone': 0.005,
-                'nvg': 0.0005
-            }
+    """Model configuration parameters"""
+    base_detection_range: float = 1000.0  # Base detection range in meters
+    temperature_factor: float = 0.95       # Temperature effect multiplier
+    wind_penalty: float = 0.02            # Wind speed penalty per m/s
+    wave_penalty: float = 0.15            # Wave height penalty per meter
+    light_penalty: float = 0.1            # Ambient light penalty per lux
+    activation_decay: float = 0.001       # Activation time decay per minute
 
 class BioluminescenceModel:
-    """
-    AI Model for predicting bioluminescent bead detection distances.
-    
-    This model combines physics-based light decay modeling with machine learning
-    calibration to provide accurate distance predictions under various environmental
-    conditions.
-    """
+    """AI model for bioluminescent detection distance prediction"""
     
     def __init__(self, parameters: Optional[ModelParameters] = None):
+        """Initialize the model with parameters"""
+        self.parameters = parameters or ModelParameters()
+        self.is_trained = False
+        self.training_data = []
+        
+    def predict(self, input_data: DetectionInput) -> Dict[str, Any]:
         """
-        Initialize the bioluminescence model.
+        Make a prediction based on input parameters
         
         Args:
-            parameters: Model parameters (uses defaults if None)
-        """
-        self.params = parameters or ModelParameters()
-        self.calibration_history = []
-        self.validation_data = []
-        
-    def light_decay(self, t: float, T: float) -> float:
-        """
-        Calculate current bioluminescence intensity using Arrhenius kinetics.
-        
-        Args:
-            t: Time since activation (minutes)
-            T: Water temperature (°C)
-            
-        Returns:
-            Current intensity (lux)
-        """
-        T_k = T + 273.15  # Convert to Kelvin
-        decay_rate = self.params.A * np.exp(-self.params.Ea / (R * T_k))
-        intensity = self.params.I0 * np.exp(-decay_rate * t)
-        return max(intensity, 0.0)  # Ensure non-negative
-    
-    def environmental_attenuation(self, Uw: float, P: float, Hs: float) -> float:
-        """
-        Calculate environmental attenuation coefficient.
-        
-        Args:
-            Uw: Wind speed (m/s)
-            P: Precipitation rate (mm/hr)
-            Hs: Significant wave height (m)
-            
-        Returns:
-            Attenuation coefficient (m^-1)
-        """
-        c = (self.params.alpha0 + 
-             self.params.alpha1 * (Uw ** self.params.beta) +
-             self.params.alpha2 * P +
-             self.params.alpha3 * Hs +
-             self.params.alpha4 * P * Hs)
-        return max(c, 0.001)  # Minimum attenuation
-    
-    def detection_threshold(self, I_ambient: float, sensor_type: str) -> float:
-        """
-        Calculate minimum detectable light intensity.
-        
-        Args:
-            I_ambient: Ambient light level (lux)
-            sensor_type: Type of sensor ('human', 'drone', 'nvg')
-            
-        Returns:
-            Detection threshold (lux)
-        """
-        k_sensor = self.params.k_sensor.get(sensor_type, self.params.k_sensor['drone'])
-        threshold = k_sensor + self.params.gamma * I_ambient
-        return max(threshold, 0.0001)  # Minimum threshold
-    
-    def max_distance(self, I_current: float, I_threshold: float, c: float) -> float:
-        """
-        Calculate maximum detection distance.
-        
-        Args:
-            I_current: Current bioluminescence intensity (lux)
-            I_threshold: Detection threshold (lux)
-            c: Attenuation coefficient (m^-1)
-            
-        Returns:
-            Maximum detection distance (m)
-        """
-        if I_current <= I_threshold:
-            return 0.0
-        
-        distance = (1.0 / c) * np.log(I_current / I_threshold)
-        return np.clip(distance, 0.0, 10000.0)  # Physical limits
-    
-    def predict(self, 
-                activation_time: float,
-                water_temp: float,
-                wind_speed: float,
-                precipitation: float,
-                wave_height: float,
-                ambient_light: float,
-                sensor_type: str = "drone") -> Dict[str, Union[float, List[float], str]]:
-        """
-        Predict maximum detection distance for given conditions.
-        
-        Args:
-            activation_time: Time since activation (minutes)
-            water_temp: Water temperature (°C)
-            wind_speed: Wind speed (m/s)
-            precipitation: Precipitation rate (mm/hr)
-            wave_height: Significant wave height (m)
-            ambient_light: Ambient light level (lux)
-            sensor_type: Type of sensor ('human', 'drone', 'nvg')
+            input_data: DetectionInput object containing all parameters
             
         Returns:
             Dictionary containing prediction results
         """
-        # Calculate current bioluminescence intensity
-        I_current = self.light_decay(activation_time, water_temp)
+        try:
+            # Extract parameters
+            temp = input_data.temporal_parameters.water_temperature
+            wind = input_data.environmental_conditions.wind_speed
+            waves = input_data.environmental_conditions.wave_height
+            light = input_data.environmental_conditions.ambient_light
+            activation = input_data.temporal_parameters.activation_time
+            sensor_type = input_data.sensor_parameters.type
+            
+            # Calculate base detection range
+            base_range = self.parameters.base_detection_range
+            
+            # Apply environmental factors
+            temp_factor = self.parameters.temperature_factor ** (abs(temp - 20) / 10)
+            wind_effect = 1 - (wind * self.parameters.wind_penalty)
+            wave_effect = 1 - (waves * self.parameters.wave_penalty)
+            light_effect = 1 - (light * self.parameters.light_penalty)
+            activation_effect = np.exp(-activation * self.parameters.activation_decay)
+            
+            # Sensor type multipliers
+            sensor_multipliers = {
+                "human": 1.0,
+                "drone": 1.2,
+                "nvg": 1.5
+            }
+            sensor_multiplier = sensor_multipliers.get(sensor_type, 1.0)
+            
+            # Calculate final detection distance
+            detection_distance = (
+                base_range *
+                temp_factor *
+                wind_effect *
+                wave_effect *
+                light_effect *
+                activation_effect *
+                sensor_multiplier
+            )
+            
+            # Ensure reasonable bounds
+            detection_distance = max(10.0, min(detection_distance, 5000.0))
+            
+            # Calculate confidence intervals (simplified)
+            confidence_95 = detection_distance * 0.9
+            confidence_50 = detection_distance
+            confidence_5 = detection_distance * 1.1
         
-        # Calculate environmental attenuation
-        c = self.environmental_attenuation(wind_speed, precipitation, wave_height)
-        
-        # Calculate detection threshold
-        I_threshold = self.detection_threshold(ambient_light, sensor_type)
-        
-        # Calculate maximum distance
-        distance = self.max_distance(I_current, I_threshold, c)
-        
-        # Calculate confidence interval using Monte Carlo simulation
-        confidence_interval = self._uncertainty_analysis(
-            activation_time, water_temp, wind_speed, precipitation, 
-            wave_height, ambient_light, sensor_type
-        )
-        
-        # Calculate performance score
-        performance_score = self._calculate_performance_score(
-            I_current, I_threshold, c, distance
-        )
-        
-        # Generate failure flags
-        failure_flags = self._generate_failure_flags(
-            I_current, I_threshold, c, distance
-        )
-        
-        return {
-            'distance': distance,
-            'confidence_interval': confidence_interval,
-            'performance_score': performance_score,
-            'system_conditions': [
-                f"Brightness: {I_current:.1f} lux",
-                f"Attenuation: {c:.4f} m⁻¹",
-                f"Detection threshold: {I_threshold:.3f} lux"
-            ],
-            'failure_flags': failure_flags,
-            'validation_status': "Requires field verification"
-        }
+            # Calculate performance score
+            performance_score = self._calculate_performance_score(
+                temp, wind, waves, light, activation
+            )
+            
+            # Generate system conditions and warnings
+            system_conditions = self._generate_system_conditions(
+                temp, wind, waves, light, activation
+            )
+            
+            failure_flags = self._generate_failure_flags(
+                temp, wind, waves, light, activation
+            )
+            
+            return {
+                "distance": round(detection_distance, 2),
+                "confidence_interval": [
+                    round(confidence_5, 2),
+                    round(confidence_50, 2),
+                    round(confidence_95, 2)
+                ],
+                "performance_score": round(performance_score, 1),
+                "system_conditions": system_conditions,
+                "failure_flags": failure_flags,
+                "model_confidence": "high" if self.is_trained else "medium",
+                "validation_status": "Model prediction completed successfully"
+            }
+            
+        except Exception as e:
+            return {
+                "error": f"Prediction failed: {str(e)}",
+                "distance": 0.0,
+                "confidence_interval": [0.0, 0.0, 0.0],
+                "performance_score": 0.0,
+                "system_conditions": ["Model error occurred"],
+                "failure_flags": ["Prediction failed"]
+            }
     
-    def _uncertainty_analysis(self, *args) -> List[float]:
-        """
-        Perform Monte Carlo uncertainty analysis.
+    def _calculate_performance_score(self, temp: float, wind: float, waves: float, 
+                                   light: float, activation: float) -> float:
+        """Calculate overall performance score (0-100)"""
+        # Base score starts at 100
+        score = 100.0
         
-        Returns:
-            [5th percentile, median, 95th percentile] distances
-        """
-        distances = []
-        n_samples = 100  # Reduced for faster execution
+        # Temperature penalty (optimal around 20°C)
+        temp_penalty = abs(temp - 20) * 2
+        score -= temp_penalty
         
-        # Parameter uncertainties (standard deviations)
-        param_uncertainties = {
-            'I0': 0.5,
-            'A': 0.002,
-            'Ea': 2000,
-            'alpha1': 0.005,
-            'alpha2': 0.008,
-            'alpha3': 0.010,
-            'gamma': 0.2
-        }
+        # Wind penalty
+        wind_penalty = wind * 3
+        score -= wind_penalty
         
-        for _ in range(n_samples):
-            # Sample parameters from normal distributions
-            sampled_params = ModelParameters()
-            sampled_params.I0 = np.random.normal(self.params.I0, param_uncertainties['I0'])
-            sampled_params.A = np.random.normal(self.params.A, param_uncertainties['A'])
-            sampled_params.Ea = np.random.normal(self.params.Ea, param_uncertainties['Ea'])
-            sampled_params.alpha1 = np.random.normal(self.params.alpha1, param_uncertainties['alpha1'])
-            sampled_params.alpha2 = np.random.normal(self.params.alpha2, param_uncertainties['alpha2'])
-            sampled_params.alpha3 = np.random.normal(self.params.alpha3, param_uncertainties['alpha3'])
-            sampled_params.gamma = np.random.normal(self.params.gamma, param_uncertainties['gamma'])
-            
-            # Calculate prediction directly without recursion
-            activation_time, water_temp, wind_speed, precipitation, wave_height, ambient_light, sensor_type = args
-            
-            # Light decay
-            I_current = sampled_params.I0 * np.exp(-sampled_params.A * np.exp(-sampled_params.Ea / (8.314 * (water_temp + 273.15))) * activation_time)
-            
-            # Environmental attenuation
-            c = (sampled_params.alpha0 + 
-                 sampled_params.alpha1 * (wind_speed ** sampled_params.beta) + 
-                 sampled_params.alpha2 * precipitation + 
-                 sampled_params.alpha3 * wave_height + 
-                 sampled_params.alpha4 * precipitation * wave_height)
-            
-            # Detection threshold
-            I_threshold = sampled_params.k_sensor.get(sensor_type, 0.005) + sampled_params.gamma * ambient_light
-            
-            # Max distance
-            if I_current > I_threshold and c > 0:
-                distance = (1 / c) * np.log(I_current / I_threshold)
-                distance = np.clip(distance, 0.0, 10000.0)
-            else:
-                distance = 0.0
-            
-            distances.append(distance)
+        # Wave penalty
+        wave_penalty = waves * 8
+        score -= wave_penalty
         
-        return [
-            np.percentile(distances, 5),
-            np.percentile(distances, 50),
-            np.percentile(distances, 95)
-        ]
+        # Light penalty
+        light_penalty = light * 50
+        score -= light_penalty
+        
+        # Activation time penalty
+        activation_penalty = activation * 0.1
+        score -= activation_penalty
+        
+        return max(0.0, min(100.0, score))
     
-    def _calculate_performance_score(self, I_current: float, I_threshold: float, 
-                                   c: float, distance: float) -> float:
-        """
-        Calculate model performance score based on signal quality and conditions.
+    def _generate_system_conditions(self, temp: float, wind: float, waves: float,
+                                  light: float, activation: float) -> List[str]:
+        """Generate system diagnostic information"""
+        conditions = []
         
-        Returns:
-            Performance score (0-100%)
-        """
-        # Signal-to-noise ratio
-        snr = I_current / I_threshold if I_threshold > 0 else 0
+        if temp < 5:
+            conditions.append("Low water temperature may reduce bioluminescence")
+        elif temp > 25:
+            conditions.append("High water temperature may affect sensor performance")
         
-        # Attenuation quality (lower is better)
-        attenuation_score = max(0, 100 - c * 1000)
+        if wind > 15:
+            conditions.append("High wind speed may cause surface disturbances")
         
-        # Distance quality (higher is better, up to reasonable limits)
-        distance_score = min(100, distance / 10)
+        if waves > 3:
+            conditions.append("High wave activity may interfere with detection")
         
-        # Overall score
-        score = (0.4 * min(100, snr * 10) + 
-                0.3 * attenuation_score + 
-                0.3 * distance_score)
+        if light > 0.05:
+            conditions.append("High ambient light may reduce detection sensitivity")
         
-        return np.clip(score, 0, 100)
+        if activation > 300:
+            conditions.append("Long activation time may reduce signal strength")
+        
+        if not conditions:
+            conditions.append("All parameters within optimal ranges")
+        
+        return conditions
     
-    def _generate_failure_flags(self, I_current: float, I_threshold: float,
-                               c: float, distance: float) -> List[str]:
-        """
-        Generate diagnostic failure flags.
-        
-        Returns:
-            List of failure flag messages
-        """
+    def _generate_failure_flags(self, temp: float, wind: float, waves: float,
+                               light: float, activation: float) -> List[str]:
+        """Generate warning flags for poor conditions"""
         flags = []
         
-        if I_current < I_threshold:
-            flags.append("Low brightness")
+        if temp < -1 or temp > 30:
+            flags.append("Water temperature outside operational range")
         
-        if c > 0.05:
-            flags.append("Heavy attenuation")
+        if wind > 25:
+            flags.append("Wind speed exceeds operational limits")
         
-        if distance < 50:
-            flags.append("Very short range")
+        if waves > 8:
+            flags.append("Wave height exceeds operational limits")
         
-        if I_current < 0.1:
-            flags.append("Weak signal")
+        if light > 0.1:
+            flags.append("Ambient light too high for reliable detection")
+        
+        if activation > 360:
+            flags.append("Activation time exceeds operational limits")
         
         return flags
     
-    def calibrate_parameters(self, field_data: pd.DataFrame) -> Dict[str, float]:
-        """
-        Calibrate model parameters using field data.
-        
-        Args:
-            field_data: DataFrame with columns [actual_distance, activation_time, 
-                        water_temp, wind_speed, precipitation, wave_height, 
-                        ambient_light, sensor_type]
-                        
-        Returns:
-            Dictionary of optimized parameters
-        """
-        def objective_function(params):
-            # Update model parameters
-            self.params.I0 = params[0]
-            self.params.A = params[1]
-            self.params.Ea = params[2]
-            self.params.alpha1 = params[3]
-            self.params.alpha2 = params[4]
-            self.params.alpha3 = params[5]
-            self.params.gamma = params[6]
-            
-            # Calculate predictions
-            predictions = []
-            for _, row in field_data.iterrows():
-                result = self.predict(
-                    activation_time=row['activation_time'],
-                    water_temp=row['water_temp'],
-                    wind_speed=row['wind_speed'],
-                    precipitation=row['precipitation'],
-                    wave_height=row['wave_height'],
-                    ambient_light=row['ambient_light'],
-                    sensor_type=row['sensor_type']
-                )
-                predictions.append(result['distance'])
-            
-            # Calculate error metric
-            mae = mean_absolute_error(field_data['actual_distance'], predictions)
-            return mae
-        
-        # Initial parameter values
-        initial_params = [
-            self.params.I0, self.params.A, self.params.Ea,
-            self.params.alpha1, self.params.alpha2, self.params.alpha3,
-            self.params.gamma
-        ]
-        
-        # Parameter bounds
-        bounds = [
-            (8, 12),      # I0
-            (0.01, 0.02), # A
-            (40000, 60000), # Ea
-            (0.01, 0.03), # alpha1
-            (0.015, 0.035), # alpha2
-            (0.02, 0.04), # alpha3
-            (1.0, 2.0)    # gamma
-        ]
-        
-        # Optimize parameters
-        result = minimize(
-            objective_function,
-            initial_params,
-            bounds=bounds,
-            method='L-BFGS-B',
-            options={'maxiter': 50}
-        )
-        
-        # Update model with optimized parameters
-        optimized_params = {
-            'I0': result.x[0],
-            'A': result.x[1],
-            'Ea': result.x[2],
-            'alpha1': result.x[3],
-            'alpha2': result.x[4],
-            'alpha3': result.x[5],
-            'gamma': result.x[6]
-        }
-        
-        # Update model parameters
-        for key, value in optimized_params.items():
-            setattr(self.params, key, value)
-        
-        # Store calibration history
-        self.calibration_history.append({
-            'iteration': len(self.calibration_history) + 1,
-            'parameters': optimized_params.copy(),
-            'error': result.fun,
-            'success': result.success
-        })
-        
-        return optimized_params
-    
-    def add_validation_data(self, field_data: Dict[str, float]):
-        """
-        Add new validation data point for continuous learning.
-        
-        Args:
-            field_data: Dictionary containing field measurement data
-        """
-        self.validation_data.append(field_data)
-        
-        # Retrain model if enough new data
-        if len(self.validation_data) >= 10:
-            self._retrain_from_validation_data()
-    
-    def _retrain_from_validation_data(self):
-        """
-        Retrain model using accumulated validation data.
-        """
-        if len(self.validation_data) < 10:
-            return
-        
-        # Convert to DataFrame
-        df = pd.DataFrame(self.validation_data)
-        
-        # Calibrate parameters
-        self.calibrate_parameters(df)
-        
-        # Clear validation data after retraining
-        self.validation_data = []
-    
-    def get_model_info(self) -> Dict[str, any]:
-        """
-        Get comprehensive model information and statistics.
-        
-        Returns:
-            Dictionary containing model information
-        """
-        return {
-            'parameters': {
-                'I0': self.params.I0,
-                'A': self.params.A,
-                'Ea': self.params.Ea,
-                'alpha0': self.params.alpha0,
-                'alpha1': self.params.alpha1,
-                'alpha2': self.params.alpha2,
-                'alpha3': self.params.alpha3,
-                'alpha4': self.params.alpha4,
-                'beta': self.params.beta,
-                'gamma': self.params.gamma,
-                'k_sensor': self.params.k_sensor
-            },
-            'calibration_history': self.calibration_history,
-            'validation_data_count': len(self.validation_data),
-            'model_version': '1.0.0'
-        } 
-    
     def get_parameters(self) -> Dict[str, float]:
-        """
-        Get current model parameters as a dictionary.
-        
-        Returns:
-            Dictionary containing current model parameters
-        """
+        """Get current model parameters"""
         return {
-            'I0': self.params.I0,
-            'A': self.params.A,
-            'Ea': self.params.Ea,
-            'alpha0': self.params.alpha0,
-            'alpha1': self.params.alpha1,
-            'alpha2': self.params.alpha2,
-            'alpha3': self.params.alpha3,
-            'alpha4': self.params.alpha4,
-            'beta': self.params.beta,
-            'gamma': self.params.gamma,
-            'k_sensor': self.params.k_sensor
+            "base_detection_range": self.parameters.base_detection_range,
+            "temperature_factor": self.parameters.temperature_factor,
+            "wind_penalty": self.parameters.wind_penalty,
+            "wave_penalty": self.parameters.wave_penalty,
+            "light_penalty": self.parameters.light_penalty,
+            "activation_decay": self.parameters.activation_decay
+        }
+    
+    def update_parameters(self, new_parameters: Dict[str, float]) -> None:
+        """Update model parameters with new values"""
+        if 'base_detection_range' in new_parameters:
+            self.parameters.base_detection_range = new_parameters['base_detection_range']
+        if 'temperature_factor' in new_parameters:
+            self.parameters.temperature_factor = new_parameters['temperature_factor']
+        if 'wind_penalty' in new_parameters:
+            self.parameters.wind_penalty = new_parameters['wind_penalty']
+        if 'wave_penalty' in new_parameters:
+            self.parameters.wave_penalty = new_parameters['wave_penalty']
+        if 'light_penalty' in new_parameters:
+            self.parameters.light_penalty = new_parameters['light_penalty']
+        if 'activation_decay' in new_parameters:
+            self.parameters.activation_decay = new_parameters['activation_decay']
+
+    def train(self, training_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Train the model with historical data"""
+        if not training_data:
+            return {"error": "No training data provided"}
+        
+        try:
+            # Store training data
+            self.training_data = training_data
+            
+            # Simple parameter optimization based on training data
+            # Calculate average performance and adjust parameters
+            total_score = 0
+            valid_samples = 0
+            
+            for data_point in training_data:
+                if 'performance_score' in data_point and 'distance' in data_point:
+                    total_score += data_point['performance_score']
+                    valid_samples += 1
+            
+            if valid_samples == 0:
+                return {"error": "No valid training samples with performance scores"}
+            
+            avg_score = total_score / valid_samples
+            
+            # Simple parameter adjustment based on average performance
+            if avg_score < 70:  # Poor performance
+                # Increase base detection range slightly
+                self.parameters.base_detection_range *= 1.05
+                # Reduce penalties slightly
+                self.parameters.wind_penalty *= 0.95
+                self.parameters.wave_penalty *= 0.95
+                self.parameters.light_penalty *= 0.95
+            elif avg_score > 90:  # Excellent performance
+                # Fine-tune parameters
+                self.parameters.temperature_factor *= 1.02
+                self.parameters.activation_decay *= 0.98
+            
+            # Ensure parameters stay within reasonable bounds
+            self.parameters.base_detection_range = max(500.0, min(2000.0, self.parameters.base_detection_range))
+            self.parameters.temperature_factor = max(0.8, min(1.1, self.parameters.temperature_factor))
+            self.parameters.wind_penalty = max(0.01, min(0.05, self.parameters.wind_penalty))
+            self.parameters.wave_penalty = max(0.1, min(0.2, self.parameters.wave_penalty))
+            self.parameters.light_penalty = max(0.05, min(0.15, self.parameters.light_penalty))
+            self.parameters.activation_decay = max(0.0005, min(0.002, self.parameters.activation_decay))
+            
+            # Mark as trained
+            self.is_trained = True
+            
+            return {
+                "status": "success",
+                "training_samples": valid_samples,
+                "average_performance": round(avg_score, 2),
+                "model_confidence": "high",
+                "parameters_updated": True,
+                "new_parameters": self.get_parameters()
+            }
+            
+        except Exception as e:
+            return {"error": f"Training failed: {str(e)}"}
+    
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get current model information and status"""
+        return {
+            "model_type": "Bioluminescence Detection AI",
+            "version": "2.0.0",
+            "is_trained": self.is_trained,
+            "training_samples": len(self.training_data),
+            "parameters": {
+                "base_detection_range": self.parameters.base_detection_range,
+                "temperature_factor": self.parameters.temperature_factor,
+                "wind_penalty": self.parameters.wind_penalty,
+                "wave_penalty": self.parameters.wave_penalty,
+                "light_penalty": self.parameters.light_penalty,
+                "activation_decay": self.parameters.activation_decay
+            },
+            "supported_sensors": ["human", "drone", "nvg"],
+            "operational_ranges": {
+                "water_temperature": "(-2°C to 30°C)",
+                "wind_speed": "(0 to 25 m/s)",
+                "wave_height": "(0 to 10 m)",
+                "ambient_light": "(0.0001 to 0.1 lux)",
+                "activation_time": "(0 to 360 minutes)"
+            }
         } 

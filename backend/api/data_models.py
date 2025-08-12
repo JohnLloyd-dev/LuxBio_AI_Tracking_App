@@ -373,6 +373,71 @@ class DataProcessor:
         print(f"Data exported to {filename}")
 
 # Utility functions for data handling
+
+class WindSpeedUnit(str, Enum):
+    """Wind speed units for conversion"""
+    MPS = "m/s"      # Meters per second
+    KPH = "km/h"     # Kilometers per hour
+    MPH = "mph"      # Miles per hour
+    KNOTS = "knots"  # Nautical miles per hour
+    BEAUFORT = "B"   # Beaufort scale
+    FPS = "ft/s"     # Feet per second
+
+class WindSpeedConverter:
+    """Utility class for wind speed conversions between different units"""
+    
+    @staticmethod
+    def to_mps(value: float, from_unit: WindSpeedUnit) -> float:
+        """Convert wind speed to meters per second"""
+        if from_unit == WindSpeedUnit.MPS:
+            return value
+        elif from_unit == WindSpeedUnit.KPH:
+            return value / 3.6
+        elif from_unit == WindSpeedUnit.MPH:
+            return value * 0.44704
+        elif from_unit == WindSpeedUnit.KNOTS:
+            return value * 0.514444
+        elif from_unit == WindSpeedUnit.BEAUFORT:
+            # Approximate conversion from Beaufort scale
+            beaufort_to_mps = [0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7]
+            if 0 <= value <= 12:
+                return beaufort_to_mps[int(value)]
+            else:
+                return value * 2.5  # Rough approximation for higher values
+        elif from_unit == WindSpeedUnit.FPS:
+            return value * 0.3048
+        else:
+            raise ValueError(f"Unknown wind speed unit: {from_unit}")
+    
+    @staticmethod
+    def from_mps(value: float, to_unit: WindSpeedUnit) -> float:
+        """Convert wind speed from meters per second to specified unit"""
+        if to_unit == WindSpeedUnit.MPS:
+            return value
+        elif to_unit == WindSpeedUnit.KPH:
+            return value * 3.6
+        elif to_unit == WindSpeedUnit.MPH:
+            return value / 0.44704
+        elif to_unit == WindSpeedUnit.KNOTS:
+            return value / 0.514444
+        elif to_unit == WindSpeedUnit.BEAUFORT:
+            # Approximate conversion to Beaufort scale
+            mps_to_beaufort = [0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7]
+            for i, threshold in enumerate(mps_to_beaufort):
+                if value <= threshold:
+                    return float(i)
+            return 12.0  # Maximum Beaufort scale
+        elif to_unit == WindSpeedUnit.FPS:
+            return value / 0.3048
+        else:
+            raise ValueError(f"Unknown wind speed unit: {to_unit}")
+    
+    @staticmethod
+    def convert(value: float, from_unit: WindSpeedUnit, to_unit: WindSpeedUnit) -> float:
+        """Convert wind speed between any two units"""
+        mps_value = WindSpeedConverter.to_mps(value, from_unit)
+        return WindSpeedConverter.from_mps(mps_value, to_unit)
+
 def load_weather_station_data(filename: str) -> List[Dict]:
     """
     Load data from marine weather station CSV format
