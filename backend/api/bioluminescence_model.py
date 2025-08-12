@@ -454,3 +454,24 @@ class BioluminescenceModel:
             'validation_data_count': len(self.validation_data),
             'model_version': '1.0.0'
         } 
+    
+    def get_parameters(self) -> Dict[str, float]:
+        """
+        Get current model parameters as a dictionary.
+        
+        Returns:
+            Dictionary containing current model parameters
+        """
+        return {
+            'I0': self.params.I0,
+            'A': self.params.A,
+            'Ea': self.params.Ea,
+            'alpha0': self.params.alpha0,
+            'alpha1': self.params.alpha1,
+            'alpha2': self.params.alpha2,
+            'alpha3': self.params.alpha3,
+            'alpha4': self.params.alpha4,
+            'beta': self.params.beta,
+            'gamma': self.params.gamma,
+            'k_sensor': self.params.k_sensor
+        } 

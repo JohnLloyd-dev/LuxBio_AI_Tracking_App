@@ -1,0 +1,36 @@
+# Wind Speed Input Examples for Bioluminescent Detection AI
+# This file shows different ways to input wind speed data
+
+# Example 1: Standard units
+scenario,activation_time,water_temp,wind_speed,wind_speed_unit,precip,wave_ht,ambient_light,sensor_type,notes
+metric_standard,45.0,8.5,5.2,m/s,2.4,1.2,0.002,drone,"Standard metric input"
+knots_input,45.0,8.5,10.1,knots,2.4,1.2,0.002,drone,"Wind speed in knots (common for marine weather)"
+mph_input,45.0,8.5,11.6,mph,2.4,1.2,0.002,drone,"Wind speed in statute miles per hour"
+nmph_input,45.0,8.5,10.1,nmph,2.4,1.2,0.002,drone,"Wind speed in nautical miles per hour"
+kmh_input,45.0,8.5,18.7,km/h,2.4,1.2,0.002,drone,"Wind speed in kilometers per hour"
+
+# Example 2: Beaufort Scale (very common in marine operations)
+beaufort_calm,45.0,8.5,0,beaufort,0.0,0.2,0.001,drone,"Beaufort 0 - Calm (< 1 knot)"
+beaufort_light_air,45.0,8.5,1,beaufort,0.0,0.3,0.001,drone,"Beaufort 1 - Light air (1-3 knots)"
+beaufort_light_breeze,45.0,8.5,2,beaufort,0.0,0.4,0.001,drone,"Beaufort 2 - Light breeze (4-6 knots)"
+beaufort_gentle_breeze,45.0,8.5,3,beaufort,0.0,0.6,0.001,drone,"Beaufort 3 - Gentle breeze (7-10 knots)"
+beaufort_moderate_breeze,45.0,8.5,4,beaufort,0.0,0.8,0.002,drone,"Beaufort 4 - Moderate breeze (11-16 knots)"
+beaufort_fresh_breeze,45.0,8.5,5,beaufort,0.0,1.2,0.002,drone,"Beaufort 5 - Fresh breeze (17-21 knots)"
+beaufort_strong_breeze,45.0,8.5,6,beaufort,2.0,1.8,0.002,drone,"Beaufort 6 - Strong breeze (22-27 knots)"
+beaufort_near_gale,45.0,8.5,7,beaufort,5.0,2.5,0.003,drone,"Beaufort 7 - Near gale (28-33 knots)"
+beaufort_gale,45.0,8.5,8,beaufort,8.0,3.2,0.005,drone,"Beaufort 8 - Gale (34-40 knots)"
+
+# Example 3: Real weather station data scenarios
+# Note: Many weather stations report in different units
+weather_station_marine,60.0,12.3,15.5,knots,0.0,0.8,0.0008,nvg,"Typical marine weather station output"
+weather_station_land,30.0,15.2,12.4,mph,1.2,0.0,0.01,human,"Land-based weather station (mph common in US)"
+weather_station_international,90.0,6.8,22.3,km/h,0.0,1.5,0.0003,drone,"International weather station (km/h common)"
+
+# Example 4: Extreme conditions
+hurricane_force,120.0,18.5,12,beaufort,45.0,8.5,0.02,drone,"Hurricane force winds - Beaufort 12"
+storm_conditions,180.0,10.2,65.0,knots,25.0,6.2,0.015,drone,"Severe storm - wind in knots"
+
+# Example 5: Mixed unit scenarios (what you might get from different data sources)
+mixed_source_1,75.0,9.8,7.8,m/s,3.5,1.8,0.004,drone,"Research vessel data"
+mixed_source_2,45.0,11.2,18.2,mph,0.0,0.9,0.001,human,"Coast guard report"
+mixed_source_3,90.0,7.4,4,beaufort,1.8,1.2,0.002,nvg,"Naval observation"

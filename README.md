@@ -1,126 +1,223 @@
-# Bioluminescent Bead Detection Distance Prediction AI Model
+# Bioluminescent Detection AI - Frontend
 
-## Overview
+A modern Next.js frontend for the Bioluminescent Detection AI system, built with TypeScript and Tailwind CSS.
 
-This AI system predicts the maximum detection distance for bioluminescent beads under various environmental conditions. The model combines physics-based light decay modeling with machine learning calibration to provide accurate distance predictions for drone-based search and rescue operations.
+## 🚀 Quick Start
 
-## Key Features
+### Prerequisites
 
-- **Physics-based light decay modeling** using Arrhenius kinetics
-- **Environmental attenuation modeling** for wind, rain, and wave effects
-- **Bayesian optimization** for parameter calibration
-- **Uncertainty quantification** with Monte Carlo simulation
-- **Real-time API** for operational deployment
-- **Continuous learning** from field validation data
+- Node.js 18+
+- npm or yarn
+- Backend API running on http://localhost:8000
 
-## Architecture
-
-The system consists of several interconnected modules:
-
-1. **Light Decay Module**: Models bioluminescence intensity over time and temperature
-2. **Environmental Attenuation Module**: Calculates light attenuation from environmental factors
-3. **Detection Threshold Module**: Determines minimum detectable light levels
-4. **Distance Solver**: Computes maximum detection distance
-5. **Calibration Engine**: Optimizes model parameters using field data
-6. **API Interface**: Provides real-time prediction capabilities
-
-## Installation
+### Installation
 
 ```bash
-pip install -r requirements.txt
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
 ```
 
-## Quick Start
+The application will be available at http://localhost:3000
 
-```python
-from bioluminescence_model import BioluminescenceModel
+## 🏗️ Project Structure
 
-# Initialize model
-model = BioluminescenceModel()
-
-# Make prediction
-result = model.predict(
-    activation_time=45,      # minutes
-    water_temp=8.5,          # °C
-    wind_speed=5.2,          # m/s
-    precipitation=2.4,       # mm/hr
-    wave_height=1.2,         # m
-    ambient_light=0.002,     # lux
-    sensor_type="drone"
-)
-
-print(f"Max detection distance: {result['distance']:.0f} m")
-print(f"Confidence interval: {result['confidence_interval']}")
+```
+frontend/
+├── src/
+│   ├── app/                 # Next.js App Router
+│   │   ├── globals.css      # Global styles with Tailwind
+│   │   ├── layout.tsx       # Root layout component
+│   │   └── page.tsx         # Main page component
+│   ├── components/          # React components
+│   │   ├── PredictionTab.tsx
+│   │   ├── WindSpeedConverterTab.tsx
+│   │   ├── BulkPredictionTab.tsx
+│   │   └── ModelInfoTab.tsx
+│   ├── lib/                 # Utility libraries
+│   │   ├── api.ts          # API client
+│   │   └── utils.ts        # Utility functions
+│   └── types/              # TypeScript type definitions
+│       └── api.ts          # API types
+├── package.json
+├── tailwind.config.js      # Tailwind CSS configuration
+├── next.config.js          # Next.js configuration
+└── tsconfig.json           # TypeScript configuration
 ```
 
-## API Usage
+## 🎨 Features
 
-Start the API server:
+### Core Functionality
+
+- **AI Prediction**: Single prediction with comprehensive form validation
+- **Wind Speed Converter**: Convert between 6 different wind speed units
+- **Bulk Prediction**: Process multiple scenarios via CSV upload
+- **Model Information**: View current model parameters and system status
+
+### UI/UX Features
+
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Modern Interface**: Clean, professional design with Tailwind CSS
+- **Real-time Validation**: Form validation with helpful error messages
+- **Loading States**: Smooth loading indicators and transitions
+- **Toast Notifications**: User feedback for actions and errors
+
+### Technical Features
+
+- **TypeScript**: Full type safety throughout the application
+- **React Hook Form**: Efficient form handling with validation
+- **Axios**: HTTP client for API communication
+- **Lucide Icons**: Beautiful, consistent iconography
+- **Tailwind CSS**: Utility-first styling with custom components
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### Tailwind CSS
+
+The project uses Tailwind CSS with custom configuration:
+
+- Custom color palette with primary and secondary colors
+- Custom animations (fade-in, slide-up, pulse-slow)
+- Responsive design utilities
+- Custom component classes (btn-primary, card, input-field, etc.)
+
+## 📱 Responsive Design
+
+The application is fully responsive with:
+
+- **Mobile-first approach**: Optimized for mobile devices
+- **Tablet support**: Adaptive layouts for medium screens
+- **Desktop optimization**: Enhanced features for large screens
+- **Touch-friendly**: Large buttons and input fields for mobile
+
+## 🚀 Deployment
+
+### Development
 
 ```bash
-uvicorn api.main:app --reload
+npm run dev
 ```
 
-Make predictions via HTTP:
+### Production Build
 
 ```bash
-curl -X POST "http://localhost:8000/predict" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "activation_time": 45,
-       "water_temp": 8.5,
-       "wind_speed": 5.2,
-       "precipitation": 2.4,
-       "wave_height": 1.2,
-       "ambient_light": 0.002,
-       "sensor_type": "drone"
-     }'
+npm run build
+npm start
 ```
 
-## Model Components
+### Docker Deployment
 
-### Core Mathematical Framework
+```bash
+# Build the Docker image
+docker build -t bioluminescent-frontend .
 
-1. **Light Decay**: `I(t,T) = I₀ · e^(-[A·e^(-Eₐ/(R·Tₖ))]·t)`
-2. **Attenuation**: `c = α₀ + α₁·U_w^β + α₂·P + α₃·H_s + α₄·P·H_s`
-3. **Detection Threshold**: `I_th = k_sensor + γ·I_ambient`
-4. **Max Distance**: `d_max = (1/c) · ln(I(t,T)/I_th)`
+# Run the container
+docker run -p 3000:3000 bioluminescent-frontend
+```
 
-### Input Parameters
+## 🧪 Testing
 
-| Category      | Parameters        | Units | Range           |
-| ------------- | ----------------- | ----- | --------------- |
-| Temporal      | Activation time   | min   | 0-360           |
-|               | Water temperature | °C    | -2 to 30        |
-| Environmental | Wind speed        | m/s   | 0-25            |
-|               | Precipitation     | mm/hr | 0-50            |
-|               | Wave height       | m     | 0-10            |
-|               | Ambient light     | lux   | 0.0001-0.1      |
-| Sensor        | Type              | -     | human/drone/nvg |
+```bash
+# Run type checking
+npm run type-check
 
-### Output Specifications
+# Run linting
+npm run lint
+```
 
-| Output              | Format           | Description             |
-| ------------------- | ---------------- | ----------------------- |
-| Max distance        | Meters           | Detection limit         |
-| Confidence interval | [low, med, high] | 90% prediction interval |
-| Performance score   | 0-100%           | Model confidence        |
-| Failure flags       | Text             | Diagnostic messages     |
+## 📦 Dependencies
 
-## Validation Protocol
+### Core Dependencies
 
-The model includes comprehensive validation procedures:
+- **Next.js 14**: React framework with App Router
+- **React 18**: UI library
+- **TypeScript**: Type safety
+- **Tailwind CSS**: Styling framework
 
-- **Field Test Matrix**: Systematic testing across environmental conditions
-- **Validation Metrics**: MAE, MAPE, R², Coverage, Operational Accuracy
-- **Continuous Improvement**: Adaptive learning from new field data
+### UI/UX Dependencies
 
-## Performance Targets
+- **React Hook Form**: Form handling
+- **React Hot Toast**: Toast notifications
+- **Lucide React**: Icons
+- **clsx & tailwind-merge**: Utility class management
 
-- Prediction time: < 100 ms per scenario
-- Accuracy: > 90% within 15% error
-- Calibration convergence: < 50 iterations
+### Development Dependencies
 
-## License
+- **ESLint**: Code linting
+- **PostCSS**: CSS processing
+- **Autoprefixer**: CSS vendor prefixing
 
-This project is proprietary to Lux Bio and contains confidential algorithms for bioluminescent detection systems.
+## 🔗 API Integration
+
+The frontend communicates with the FastAPI backend through:
+
+- **RESTful API**: Standard HTTP endpoints
+- **Type-safe requests**: Full TypeScript integration
+- **Error handling**: Comprehensive error management
+- **Loading states**: User feedback during API calls
+
+## 🎯 Key Components
+
+### PredictionTab
+
+- Comprehensive form for single predictions
+- Real-time validation
+- Beautiful results display with confidence intervals
+- Performance metrics and warnings
+
+### WindSpeedConverterTab
+
+- Convert between 6 wind speed units
+- Support for Beaufort scale
+- Real-time conversion results
+
+### BulkPredictionTab
+
+- CSV file upload and processing
+- Template download
+- Batch results display
+- Error handling for malformed data
+
+### ModelInfoTab
+
+- Current model parameters display
+- System status information
+- Input specification documentation
+- Supported sensors list
+
+## 🚀 Performance
+
+- **Fast Loading**: Optimized bundle size
+- **Efficient Rendering**: React optimization
+- **Caching**: Next.js built-in caching
+- **Code Splitting**: Automatic code splitting
+
+## 🔒 Security
+
+- **Input Validation**: Client and server-side validation
+- **Type Safety**: TypeScript prevents runtime errors
+- **Secure API Calls**: Proper error handling
+- **XSS Protection**: React's built-in protection
+
+## 📈 Future Enhancements
+
+- **Real-time Data Visualization**: Charts and graphs
+- **User Authentication**: Secure access control
+- **Advanced Analytics**: Detailed performance metrics
+- **Mobile App**: React Native companion app
+- **Offline Support**: Service worker implementation
+
+---
+
+_Frontend Development - Updated: August 7, 2025_
+_Status: ✅ READY FOR DEVELOPMENT_

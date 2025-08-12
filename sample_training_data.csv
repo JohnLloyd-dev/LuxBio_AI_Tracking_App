@@ -1,0 +1,11 @@
+activation_time,water_temperature,wind_speed,wind_speed_unit,precipitation,wave_height,ambient_light,sensor_type,actual_distance,notes
+45.0,8.5,5.2,m/s,2.4,1.2,0.002,drone,125.5,Test deployment 1
+60.0,10.2,3.1,knots,0.0,0.5,0.0005,nvg,89.2,Clear night conditions
+30.0,5.8,12.4,beaufort,8.7,2.3,0.01,human,45.8,Stormy conditions
+75.0,12.1,2.8,m/s,1.2,0.8,0.001,drone,156.3,Moderate visibility
+90.0,15.5,4.6,km/h,0.5,1.5,0.003,human,78.9,Daylight test
+120.0,7.2,6.8,mph,3.1,1.8,0.008,nvg,67.4,Evening deployment
+50.0,9.8,1.5,m/s,0.0,0.3,0.0002,drone,203.7,Perfect conditions
+85.0,11.3,8.9,knots,4.2,2.1,0.015,human,34.2,Heavy weather
+40.0,6.5,3.7,beaufort,1.8,1.0,0.004,nvg,112.8,Standard conditions
+100.0,13.7,5.4,m/s,2.9,1.6,0.006,drone,92.1,Variable conditions 
