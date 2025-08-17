@@ -48,6 +48,7 @@ docker run -d \
     -e PYTHONPATH=/app \
     -e ENVIRONMENT=development \
     -e PORT=8000 \
+    -e CORS_ORIGINS="http://localhost:3000,http://83.229.67.244:3000,https://83.229.67.244:3000" \
     bioluminescent-backend:dev
 
 # Wait for backend to be ready
@@ -69,7 +70,7 @@ docker run -d \
     -p 3000:3000 \
     -v $(pwd)/frontend:/app \
     -v /app/node_modules \
-    -e NEXT_PUBLIC_API_URL=http://localhost:8000 \
+    -e NEXT_PUBLIC_API_URL=http://83.229.67.244:8000 \
     -e NODE_ENV=development \
     bioluminescent-frontend:dev
 
@@ -93,8 +94,8 @@ print_success "🚀 Development deployment completed!"
 echo ""
 echo "🌐 Access Points:"
 echo "   Frontend: http://localhost:3000"
-echo "   Backend API: http://localhost:8000"
-echo "   API Docs: http://localhost:8000/docs"
+echo "   Backend API: http://83.229.67.244:8000"
+echo "   API Docs: http://83.229.67.244:8000/docs"
 echo ""
 echo "🔄 Hot Reloading:"
 echo "   - Backend: Edit files in ./backend/ and see changes automatically"

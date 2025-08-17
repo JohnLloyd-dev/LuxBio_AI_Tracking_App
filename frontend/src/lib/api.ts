@@ -7,7 +7,8 @@ import type {
   TrainingStatusResponse,
 } from "@/types/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://83.229.67.244:8000";
 
 // Simple API client without singleton pattern
 export const ApiClient = {

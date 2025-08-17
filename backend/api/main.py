@@ -34,13 +34,27 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# CORS configuration
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else [
+    "http://localhost:3000",  # Local development
+    "http://127.0.0.1:3000",  # Local development alternative
+    "http://83.229.67.244:3000",  # VPS frontend
+    "http://83.229.67.244",  # VPS without port
+    "https://83.229.67.244",  # VPS with HTTPS (if configured)
+    "https://83.229.67.244:3000",  # VPS with HTTPS and port
+]
+
+# Log CORS configuration for debugging
+print(f"🔒 CORS Configuration: Allowing origins: {CORS_ORIGINS}")
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Initialize the bioluminescence model
@@ -890,6 +904,17 @@ async def health_check():
         "model_loaded": True,
         "data_processor_ready": True,
         "wind_speed_units_supported": len([unit.value for unit in WindSpeedUnit])
+    }
+
+@app.get("/cors-info")
+async def cors_info():
+    """CORS configuration information endpoint"""
+    return {
+        "cors_origins": CORS_ORIGINS,
+        "cors_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "cors_headers": ["*"],
+        "cors_credentials": True,
+        "timestamp": datetime.now().isoformat()
     }
 
 # Error handlers
