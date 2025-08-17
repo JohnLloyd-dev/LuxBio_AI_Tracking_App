@@ -7,8 +7,7 @@ calibration, and model management functionality with enhanced data validation.
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import BaseModel, Field, validator
 from typing import List, Dict, Optional, Union, Any
 import numpy as np
@@ -67,8 +66,8 @@ training_history: List[Dict[str, Any]] = []
 # Initialize the data processor
 data_processor = DataProcessor()
 
-# Mount static files for web interface
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+# Static files mounting removed - this is an API-only backend
+# app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 
 # Enhanced Pydantic models for request/response validation
 class PredictionRequest(BaseModel):
@@ -205,8 +204,14 @@ class TrainingStatusResponse(BaseModel):
 # API Endpoints
 @app.get("/")
 async def root():
-    """Serve the web interface"""
-    return FileResponse("api/static/index.html")
+    """API root endpoint"""
+    return {
+        "message": "Bioluminescent Detection AI API",
+        "version": "2.0.0",
+        "status": "operational",
+        "docs": "/docs",
+        "health": "/health"
+    }
 
 @app.get("/api")
 async def api_info():
